@@ -4,9 +4,23 @@ import axios from 'axios';
 
 const prisma = new PrismaClient();
 
-// This endpoint would be called by a cron job or external trigger
-export async function POST() {
+// This endpoint is called by GitHub Actions cron job
+export async function POST(request: Request) {
     try {
+        // Verify authentication from GitHub Actions
+        const authHeader = request.headers.get('authorization');
+        const expectedToken = process.env.CRON_SECRET;
+
+        if (!expectedToken) {
+            console.error('CRON_SECRET not configured');
+            return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+        }
+
+        if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
+            console.error('Unauthorized scheduler access attempt');
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const settings = await prisma.settings.findUnique({ where: { id: 1 } });
         if (!settings?.isRunning) {
             return NextResponse.json({ message: 'Automation is paused' });

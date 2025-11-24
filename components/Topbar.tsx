@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Play, Pause, Save } from 'lucide-react';
+import { Play, Pause, Save, Cloud } from 'lucide-react';
 import { useWorkflowStore } from '@/store/workflowStore';
 
 export default function Topbar() {
-  const { isRunning, toggleRunning, saveWorkflow, interval, setInterval } = useWorkflowStore();
+  const { isRunning, toggleRunning, saveWorkflow } = useWorkflowStore();
 
   return (
     <div className="h-16 bg-black border-b border-gray-800 flex items-center justify-between px-6">
@@ -23,19 +23,12 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-400">Interval:</label>
-          <select
-            value={interval}
-            onChange={(e) => setInterval(Number(e.target.value))}
-            className="px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 cursor-pointer"
-          >
-            <option value={1}>1 minute</option>
-            <option value={5}>5 minutes</option>
-            <option value={10}>10 minutes</option>
-            <option value={30}>30 minutes</option>
-            <option value={60}>1 hour</option>
-          </select>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg">
+          <Cloud size={14} className="text-blue-400" />
+          <span className="text-xs text-gray-400">Cloud Automation</span>
+          <span className={`text-xs font-medium ${isRunning ? 'text-green-400' : 'text-gray-500'}`}>
+            {isRunning ? 'Active' : 'Paused'}
+          </span>
         </div>
 
         <button
