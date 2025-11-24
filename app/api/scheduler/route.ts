@@ -4,23 +4,10 @@ import axios from 'axios';
 
 const prisma = new PrismaClient();
 
-// This endpoint is called by GitHub Actions cron job
-export async function POST(request: Request) {
+// This endpoint can be called manually for testing
+// Inngest handles the automated scheduling
+export async function POST() {
     try {
-        // Verify authentication from GitHub Actions
-        const authHeader = request.headers.get('authorization');
-        const expectedToken = process.env.CRON_SECRET;
-
-        if (!expectedToken) {
-            console.error('CRON_SECRET not configured');
-            return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-        }
-
-        if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
-            console.error('Unauthorized scheduler access attempt');
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
         const settings = await prisma.settings.findUnique({ where: { id: 1 } });
         if (!settings?.isRunning) {
             return NextResponse.json({ message: 'Automation is paused' });
@@ -47,21 +34,18 @@ export async function POST(request: Request) {
                         // Process this pair
                         const pageData = await prisma.page.findUnique({ where: { nodeId: pageNode.id } });
 
-                        // Get videos from the node's queue data (workflow is source of truth)
+                        // Get videos from the node's queue data
                         const videoQueue = videoNode.data?.queue || [];
-                        const videoToPost = videoQueue[0]; // Get first video
+                        const videoToPost = videoQueue[0];
 
                         if (pageData && videoToPost) {
-                            // Get caption - either from video or from connected caption node
+                            // Get caption
                             let caption = 'Posted via ReelPilot';
 
-                            // Check if video has custom caption
                             if (typeof videoToPost === 'object' && videoToPost.caption) {
                                 caption = videoToPost.caption;
 
-                                // If chainDefault is true, append the default caption
                                 if (videoToPost.chainDefault) {
-                                    // Find connected caption node
                                     const captionEdge = edges.find((e: any) =>
                                         e.source === pageNode.id &&
                                         nodes.find((n: any) => n.id === e.target && n.type === 'captionNode')
@@ -75,7 +59,6 @@ export async function POST(request: Request) {
                                     }
                                 }
                             } else if (typeof videoToPost !== 'object' || !videoToPost.caption) {
-                                // No custom caption, use default caption node if available
                                 const captionEdge = edges.find((e: any) =>
                                     e.source === pageNode.id &&
                                     nodes.find((n: any) => n.id === e.target && n.type === 'captionNode')
@@ -90,11 +73,9 @@ export async function POST(request: Request) {
                             }
 
                             try {
-                                // Get video URL
                                 const videoUrl = typeof videoToPost === 'string' ? videoToPost : videoToPost.url;
 
-                                // Post video to Facebook
-                                console.log(`Posting video ${videoUrl} to page ${pageData.name} with caption: ${caption}`);
+                                console.log(`Posting video ${videoUrl} to page ${pageData.name}`);
 
                                 await axios.post(`https://graph.facebook.com/v19.0/${pageData.facebookId}/videos`, null, {
                                     params: {
