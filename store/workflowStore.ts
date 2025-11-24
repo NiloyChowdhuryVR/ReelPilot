@@ -30,6 +30,7 @@ interface WorkflowState {
     setInterval: (interval: number) => void;
     saveWorkflow: () => Promise<void>;
     loadWorkflow: (id: string) => Promise<void>;
+    loadSettings: () => Promise<void>;
 
     fetchWorkflows: () => Promise<void>;
     createWorkflow: (name?: string) => Promise<void>;
@@ -231,5 +232,19 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         }));
 
         await get().saveWorkflow();
+    },
+
+    loadSettings: async () => {
+        try {
+            const response = await axios.get('/api/settings');
+            if (response.data) {
+                set({
+                    isRunning: response.data.isRunning,
+                    interval: response.data.interval
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load settings:', error);
+        }
     }
 }));
