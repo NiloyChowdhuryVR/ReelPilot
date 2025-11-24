@@ -92,6 +92,31 @@ export const scheduledVideoPost = inngest.createFunction(
                                             }
                                         });
 
+                                        // Remove video from queue
+                                        const updatedQueue = videoQueue.slice(1); // Remove first video
+                                        videoNode.data.queue = updatedQueue;
+
+                                        // Update workflow in database
+                                        await prisma.workflow.update({
+                                            where: { id: workflow.id },
+                                            data: {
+                                                nodes: JSON.stringify(nodes),
+                                                edges: JSON.stringify(edges)
+                                            }
+                                        });
+
+                                        // Delete from VideoQueue table
+                                        try {
+                                            await prisma.videoQueue.deleteMany({
+                                                where: {
+                                                    nodeId: videoNode.id,
+                                                    url: videoUrl
+                                                }
+                                            });
+                                        } catch (dbError) {
+                                            console.error('Failed to delete from VideoQueue:', dbError);
+                                        }
+
                                         allResults.push({
                                             nodeId: videoNode.id,
                                             page: pageData.name,
